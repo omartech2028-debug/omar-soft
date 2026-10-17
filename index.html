@@ -30,7 +30,7 @@
     <img src="icon-192.png" alt="">
     <b>عمر سوفت للخدمات</b>
     <div class="spin"></div>
-    <div id="lt" style="font-size:13px; color:#6c757d;">جارٍ فتح المنصة...</div>
+    <div style="font-size:13px; color:#6c757d;">جارٍ فتح المنصة...</div>
     <a id="fb" href="#" target="_top">إن لم تظهر المنصة اضغط هنا لفتحها مباشرة</a>
     <div id="cfg">⚙️ لم يُضبط رابط المنصة بعد.<br>افتح ملف <b>index.html</b> وضع رابط <b>/exec</b> في السطر الذي يبدأ بـ <b>var APP</b>.</div>
   </div>
@@ -43,34 +43,23 @@
   var APP = "https://script.google.com/macros/s/AKfycbwi3SBBwzjpVpRT0Uyjjhn7KnaMmAeMkwZ3qUyxIVEiEPqf1QueYHwewdpOcYMukhkEQA/exec";
 
   (function () {
-    var ld = document.getElementById('ld'), fb = document.getElementById('fb'), f = document.getElementById('app'), lt = document.getElementById('lt');
+    var ld = document.getElementById('ld'), fb = document.getElementById('fb'), f = document.getElementById('app');
     if (APP.indexOf('https://script.google.com/') !== 0) { document.querySelector('.spin').style.display = 'none'; document.getElementById('cfg').style.display = 'block'; return; }
     // تمرير المعاملات كما هي: ?m=1 لوضع الهاتف ، ?p=att لصفحة الحضور
-    var target = APP + (location.search || '');
+    var qs = location.search || '';
+    var target = APP + (qs ? (APP.indexOf('?') === -1 ? qs : '&' + qs.substring(1)) : '');
     // صفحة الحضور (كود QR المعلّق في المحل) تُفتح مباشرة كما كانت سابقاً — حتى يبقى ربط هواتف العمال كما هو
-    if (/[?&]p=(att|attdo)(&|$)/.test(location.search || '')) { location.replace(target); return; }
-    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(function () {}); }
-    /* v2: بعض الهواتف (خاصة الآيفون) ترفض فتح منصة Google داخل هذه الصفحة وتُظهر «401 حدث خطأ».
-       المنصة ترسل إشارة «فُتحت» — إن لم تصل نفتحها مباشرة، ويتذكر الهاتف ذلك 3 أيام. */
-    var KEY = 'omarsoftDirect', ready = false, gone = false;
-    function remember() { try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {} }
-    function go() { if (ready || gone) return; gone = true; remember(); lt.textContent = 'جارٍ فتح المنصة مباشرة...'; fb.style.display = 'none'; location.replace(target); }
-    fb.href = target;
-    fb.addEventListener('click', remember);
-    var last = 0; try { last = parseInt(localStorage.getItem(KEY), 10) || 0; } catch (e) {}
-    /* الآيفون والآيباد (سفاري وكروم معاً) يرفضان المنصة داخل الإطار ← نفتحها مباشرة فوراً */
+    if (/[?&]p=(att|attdo)(&|$)/.test(qs)) { location.replace(target); return; }
+    // الآيفون والآيباد فقط (سفاري وكروم): لا يقبلان المنصة داخل الإطار (خطأ 401) ← تُفتح مباشرة،
+    // مع الإبقاء على ?m=1 حتى يعمل دخول الهاتف المباشر. الكمبيوتر وأندرويد يبقيان كما كانا.
     var iOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    if (location.hash !== '#frame' && (iOS || (last && Date.now() - last < 3 * 86400000))) { go(); return; }
-    window.addEventListener('message', function (e) {
-      if (!e.data || e.data.omarsoft !== 'ready') return;
-      ready = true; ld.style.display = 'none';
-      try { localStorage.removeItem(KEY); } catch (e2) {}
-    });
+    if (iOS && location.hash !== '#frame') { location.replace(target); return; }
+    fb.href = target;
     f.src = target;
-    var loaded = false;
-    f.addEventListener('load', function () { if (loaded) return; loaded = true; setTimeout(go, 12000); });
-    setTimeout(function () { if (!ready && !gone) fb.style.display = 'inline-block'; }, 5000);
-    setTimeout(go, 30000);
+    f.addEventListener('load', function () { setTimeout(function () { ld.style.display = 'none'; }, 250); });
+    // إن تأخرت المنصة كثيراً نُظهر زر الفتح المباشر كحل احتياطي
+    setTimeout(function () { if (ld.style.display !== 'none') fb.style.display = 'inline-block'; }, 12000);
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(function () {}); }
   })();
 </script>
 </body>
