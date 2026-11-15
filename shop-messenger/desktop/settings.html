@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>إعداد مراسلة المحل</title>
+<style>
+  body { margin: 0; padding: 24px 26px; font-family: "Segoe UI", Tahoma, Arial, sans-serif; background: #f4f1ea; color: #16241b; }
+  h1 { font-size: 1.25rem; margin: 0 0 6px; }
+  p { color: #5f7265; line-height: 1.7; margin: 0 0 14px; font-size: .93rem; }
+  .choice { display: block; width: 100%; text-align: start; font: inherit; color: inherit; cursor: pointer;
+    background: #fffdf8; border: 2px solid #e2ddd0; border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; }
+  .choice:hover, .choice:focus-visible { border-color: #14532d; outline: none; }
+  .choice b { display: block; font-size: 1.05rem; margin-bottom: 4px; }
+  .choice span { color: #5f7265; font-size: .88rem; line-height: 1.6; }
+  .choice:disabled { opacity: .6; cursor: default; }
+  #client-box { background: #fffdf8; border: 1px solid #e2ddd0; border-radius: 14px; padding: 14px 16px; }
+  label { display: grid; gap: 6px; font-size: .9rem; color: #5f7265; }
+  input { font: inherit; padding: 9px 12px; border: 1px solid #e2ddd0; border-radius: 10px; direction: ltr; text-align: left; }
+  .row { display: flex; gap: 8px; margin-top: 12px; }
+  button.go { font: inherit; font-weight: 600; padding: 9px 16px; border: 0; border-radius: 10px; background: #14532d; color: #fff; cursor: pointer; }
+  button.alt { font: inherit; padding: 9px 14px; border: 1px solid #e2ddd0; border-radius: 10px; background: #fff; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: default; }
+  #msg { color: #c2410c; min-height: 1.4em; margin: 12px 0 0; font-size: .9rem; }
+  #msg.ok { color: #1f7a45; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+  <h1>ما دور هذا الحاسوب؟</h1>
+  <p>تختار مرة واحدة فقط، ويمكن تغييره لاحقًا من أيقونة البرنامج قرب الساعة.</p>
+
+  <div id="roles">
+    <button class="choice" id="pick-center">
+      <b>🏪 الحاسوب الرئيسي (المركز)</b>
+      <span>حاسوب واحد فقط في المحل. يحفظ كل الرسائل ويوزّعها، ويجب أن يبقى مشتغلًا طوال وقت العمل.</span>
+    </button>
+    <button class="choice" id="pick-client">
+      <b>🖥 حاسوب عمل</b>
+      <span>كل حاسوب آخر في المحل. يتصل بالمركز وحده ويُظهر الرسائل الجديدة كدائرة عائمة.</span>
+    </button>
+  </div>
+
+  <div id="client-box" hidden>
+    <p id="search">جاري البحث عن المركز على شبكة المحل…</p>
+    <form id="form">
+      <label>عنوان المركز<input id="server" placeholder="192.168.1.10:4800" required></label>
+      <div class="row">
+        <button class="go" id="save" type="submit">اتصال</button>
+        <button class="alt" id="again" type="button">بحث من جديد</button>
+        <button class="alt" id="back" type="button">رجوع</button>
+      </div>
+    </form>
+  </div>
+
+  <p id="msg" role="alert"></p>
+<script>
+  const $ = id => document.getElementById(id);
+  const say = (t, ok) => { $('msg').textContent = t; $('msg').classList.toggle('ok', !!ok); };
+
+  $('pick-center').addEventListener('click', async () => {
+    say('');
+    $('pick-center').disabled = $('pick-client').disabled = true;
+    const r = await window.settings.chooseCenter().catch(() => ({ ok: false, error: 'حدث خطأ غير متوقع' }));
+    $('pick-center').disabled = $('pick-client').disabled = false;
+    say(r.ok ? 'تم. جاري تشغيل المركز…' : r.error, r.ok);
+  });
+
+  async function search() {
+    say('');
+    $('search').textContent = 'جاري البحث عن المركز على شبكة المحل…';
+    $('again').disabled = true;
+    const found = await window.settings.discover().catch(() => null);
+    $('again').disabled = false;
+    if (found) {
+      $('server').value = found.replace(/^http:\/\//, '');
+      $('search').textContent = 'وجدتُ المركز ✓ اضغط «اتصال».';
+    } else {
+      $('search').textContent = 'لم أجد المركز تلقائيًا. تأكد أن الحاسوب الرئيسي مشتغل وعلى نفس الشبكة، أو اكتب عنوانه يدويًا (يظهر في «معلومات المركز» على الحاسوب الرئيسي).';
+    }
+  }
+
+  $('pick-client').addEventListener('click', () => { $('roles').hidden = true; $('client-box').hidden = false; search(); });
+  $('again').addEventListener('click', search);
+  $('back').addEventListener('click', () => { $('roles').hidden = false; $('client-box').hidden = true; say(''); });
+
+  $('form').addEventListener('submit', async e => {
+    e.preventDefault();
+    say(''); $('save').disabled = true; $('save').textContent = 'جاري الاتصال…';
+    const r = await window.settings.chooseClient($('server').value).catch(() => ({ ok: false, error: 'حدث خطأ غير متوقع' }));
+    $('save').disabled = false; $('save').textContent = 'اتصال';
+    say(r.ok ? 'تم الاتصال ✓' : r.error, r.ok);
+  });
+
+  window.settings.get().then(c => { if (c.server) $('server').value = c.server.replace(/^http:\/\//, ''); });
+</script>
+</body>
+</html>

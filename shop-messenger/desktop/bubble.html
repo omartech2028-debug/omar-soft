@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; user-select: none;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif; }
+  #wrap { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
+  #ball { position: relative; width: 76px; height: 76px; border-radius: 50%; background: #14532d;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .35), 0 0 0 4px rgba(255, 255, 255, .9);
+    display: grid; place-items: center; animation: pulse 1.6s ease-in-out infinite; }
+  #ball svg { width: 40px; height: 40px; }
+  #count { position: absolute; top: -6px; left: -6px; min-width: 28px; height: 28px; padding: 0 7px; box-sizing: border-box;
+    border-radius: 14px; background: #c2410c; color: #fff; font-weight: 700; font-size: 15px;
+    display: grid; place-items: center; border: 2px solid #fff; }
+  #from { max-width: 140px; padding: 3px 10px; border-radius: 12px; background: #fffdf8; color: #16241b;
+    font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .3); }
+  @keyframes pulse { 50% { transform: scale(1.08); } }
+  @media (prefers-reduced-motion: reduce) { #ball { animation: none; } }
+</style>
+</head>
+<body>
+<div id="wrap" title="رسالة جديدة — انقر للفتح">
+  <div id="ball">
+    <svg viewBox="0 0 64 64"><rect x="10" y="17" width="44" height="30" rx="5" fill="#fffdf8"/><path d="M12 20 L32 36 L52 20" fill="none" stroke="#14532d" stroke-width="4" stroke-linejoin="round"/></svg>
+    <span id="count">1</span>
+  </div>
+  <div id="from">رسالة جديدة</div>
+</div>
+<script>
+  const wrap = document.getElementById('wrap');
+  window.bubble.onUpdate(info => {
+    document.getElementById('count').textContent = info.count > 99 ? '99+' : info.count;
+    document.getElementById('from').textContent = info.from || 'رسالة جديدة';
+  });
+
+  // نغمتان قصيرتان، بدون أي ملف صوت خارجي
+  let ctx;
+  window.bubble.onSound(() => {
+    try {
+      ctx = ctx || new AudioContext();
+      if (ctx.state === 'suspended') ctx.resume();
+      [[880, 0], [1175, 0.18]].forEach(([freq, at]) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        const t = ctx.currentTime + at;
+        o.type = 'sine'; o.frequency.value = freq;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.35, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+        o.connect(g).connect(ctx.destination);
+        o.start(t); o.stop(t + 0.32);
+      });
+    } catch {}
+  });
+
+  // السحب باليد (لتبقى النقرة تعمل): حركة أقل من 5 بكسل تُعدّ نقرة
+  let drag = null;
+  wrap.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    wrap.setPointerCapture(e.pointerId);
+    drag = { x: e.screenX, y: e.screenY, travelled: 0 };
+  });
+  wrap.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const dx = e.screenX - drag.x, dy = e.screenY - drag.y;
+    if (!dx && !dy) return;
+    drag.x = e.screenX; drag.y = e.screenY;
+    drag.travelled += Math.abs(dx) + Math.abs(dy);
+    if (drag.travelled >= 5) window.bubble.move(dx, dy);
+  });
+  const end = e => {
+    if (!drag) return;
+    const wasClick = drag.travelled < 5;
+    drag = null;
+    if (e.type === 'pointerup' && wasClick) window.bubble.open(); else window.bubble.moved();
+  };
+  wrap.addEventListener('pointerup', end);
+  wrap.addEventListener('pointercancel', end);
+</script>
+</body>
+</html>

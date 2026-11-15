@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14532d">
+<title>مراسلة المحل</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- إعداد أول مرة -->
+<section id="view-setup" class="gate" hidden>
+  <form id="setup-form" class="card" autocomplete="off">
+    <div class="mark">✉</div>
+    <h1>إعداد مراسلة المحل</h1>
+    <p class="hint">هذه أول مرة يُشغَّل فيها البرنامج. أنشئ حساب صاحب المحل، وهو الذي يضيف باقي الحسابات.</p>
+    <label>الاسم<input id="setup-name" required maxlength="40"></label>
+    <label>كلمة السر (8 أحرف أو أرقام على الأقل)<input id="setup-pin" type="password" minlength="8" maxlength="64" required></label>
+    <p id="setup-error" class="error" role="alert"></p>
+    <button type="submit" class="primary">إنشاء الحساب</button>
+  </form>
+</section>
+
+<!-- الدخول -->
+<section id="view-login" class="gate" hidden>
+  <form id="login-form" class="card" autocomplete="off">
+    <div class="mark">✉</div>
+    <h1>مراسلة المحل</h1>
+    <label>الاسم<input id="login-name" required maxlength="40"></label>
+    <label>كلمة السر<input id="login-pin" type="password" maxlength="64" required></label>
+    <p id="login-error" class="error" role="alert"></p>
+    <button type="submit" class="primary">دخول</button>
+    <button type="button" class="ghost" id="login-to-join" hidden>حاسوب جديد: انضمام بالاسم فقط</button>
+  </form>
+</section>
+
+<!-- انضمام حاسوب عمل (يظهر داخل برنامج الحاسوب فقط) -->
+<section id="view-join" class="gate" hidden>
+  <form id="join-form" class="card" autocomplete="off">
+    <div class="mark">🖥</div>
+    <h1>اسم هذا الحاسوب</h1>
+    <p class="hint">اختر اسمًا يعرفه به الجميع، مثل «حاسوب الطباعة». بعدها يوافق صاحب المحل من هاتفه أو حاسوبه ويدخل البرنامج وحده.</p>
+    <label>الاسم<input id="join-name" required maxlength="40"></label>
+    <p id="join-msg" class="error" role="status"></p>
+    <button type="submit" class="primary" id="join-submit">انضمام</button>
+    <button type="button" class="ghost" id="join-to-login">لديّ حساب: دخول بالاسم وكلمة السر</button>
+  </form>
+</section>
+
+<!-- الواجهة الرئيسية -->
+<main id="view-main" hidden>
+  <aside id="side">
+    <header class="side-head">
+      <div>
+        <div class="me-name" id="me-name"></div>
+        <div class="status" id="status">متصل</div>
+      </div>
+      <div class="side-actions">
+        <button id="add-user-btn" class="ghost" hidden title="إضافة حساب">＋ حساب</button>
+        <button id="settings-btn" class="ghost" title="الإعدادات" aria-label="الإعدادات">⚙</button>
+        <button id="logout-btn" class="ghost" title="خروج">خروج</button>
+      </div>
+    </header>
+    <div id="join-banner" hidden></div>
+    <ul id="conv-list"></ul>
+  </aside>
+
+  <section id="chat">
+    <div id="chat-empty" class="empty">اختر محادثة من القائمة</div>
+    <div id="chat-open" hidden>
+      <header class="chat-head">
+        <button id="back-btn" class="ghost" aria-label="رجوع">→</button>
+        <div class="avatar" id="chat-avatar"></div>
+        <div class="chat-title" id="chat-title"></div>
+      </header>
+      <div id="messages" aria-live="polite"></div>
+      <div class="quick">
+        <button type="button">تم</button>
+        <button type="button">حاضر</button>
+        <button type="button">دقيقة</button>
+      </div>
+      <form id="composer">
+        <textarea id="text" rows="1" maxlength="4000" placeholder="اكتب رسالة…"></textarea>
+        <button id="send" type="submit" class="primary" aria-label="إرسال">إرسال</button>
+      </form>
+    </div>
+  </section>
+</main>
+
+<dialog id="add-dialog">
+  <form id="add-form" autocomplete="off">
+    <h2>إضافة حساب</h2>
+    <label>الاسم<input id="add-name" required maxlength="40" placeholder="مثل: سمير أو حاسوب الطباعة"></label>
+    <label>النوع
+      <select id="add-kind">
+        <option value="person">شخص</option>
+        <option value="computer">حاسوب</option>
+      </select>
+    </label>
+    <label><span id="add-pin-label">كلمة السر (6 أحرف أو أرقام على الأقل)</span><input id="add-pin" maxlength="64" required></label>
+    <p id="add-error" class="error" role="alert"></p>
+    <div class="row">
+      <button type="submit" class="primary">إضافة</button>
+      <button type="button" id="add-cancel" class="ghost">إلغاء</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="settings-dialog">
+  <div class="settings">
+    <h2>الإعدادات</h2>
+    <p class="hint start" id="where"></p>
+
+    <section id="notify-section" hidden>
+      <h3>إشعارات الهاتف</h3>
+      <p class="hint start" id="notify-msg">فعّل الإشعارات لتصلك الرسائل والتطبيق مغلق.</p>
+      <button type="button" id="notify-btn" class="primary">تفعيل الإشعارات</button>
+    </section>
+
+    <section>
+      <h3>كلمة سري</h3>
+      <form id="mypin-form" autocomplete="off">
+        <label>الحالية<input id="mypin-old" type="password" maxlength="64" required></label>
+        <label>الجديدة<input id="mypin-new" type="password" maxlength="64" required></label>
+        <p id="mypin-msg" class="error" role="status"></p>
+        <button type="submit" class="primary">تغيير</button>
+      </form>
+    </section>
+
+    <section id="accounts-section" hidden>
+      <h3>الحسابات</h3>
+      <ul id="accounts"></ul>
+      <p id="accounts-msg" class="error" role="status"></p>
+    </section>
+
+    <button type="button" id="settings-close" class="ghost">إغلاق</button>
+  </div>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>

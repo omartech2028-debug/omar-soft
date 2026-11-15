@@ -1,0 +1,31 @@
+{
+  "name": "shop-messenger-desktop",
+  "version": "3.0.0",
+  "description": "مراسلة المحل: المركز وبرنامج الحاسوب في مثبِّت واحد",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "prepare-center": "node scripts/prepare.js",
+    "dist": "node scripts/prepare.js && electron-builder --win nsis --publish never"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "dz.shop.messenger",
+    "productName": "Shop Messenger",
+    "files": ["main.js", "preload.js", "bubble-preload.js", "settings-preload.js", "bubble.html", "settings.html", "connecting.html", "lib/**", "assets/**"],
+    "extraResources": [{ "from": "bundle", "to": "center" }],
+    "win": { "icon": "assets/icon.png", "target": "nsis" },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": true,
+      "shortcutName": "مراسلة المحل",
+      "include": "installer.nsh",
+      "runAfterFinish": true,
+      "artifactName": "ShopMessenger-Setup-${version}.${ext}"
+    }
+  }
+}
