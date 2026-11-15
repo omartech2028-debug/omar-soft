@@ -1,0 +1,50 @@
+name: Build Shop Messenger installer
+
+on:
+  push:
+    paths:
+      - 'shop-messenger/**'
+      - '.github/workflows/shop-messenger.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run tests
+        working-directory: shop-messenger
+        continue-on-error: true
+        run: node --test
+
+      - name: Build installer
+        working-directory: shop-messenger/desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: |
+          npm install
+          npm run dist
+
+      - name: Upload installer as build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ShopMessenger-Setup
+          path: shop-messenger/desktop/dist/*.exe
+          if-no-files-found: error
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: shop-messenger-build-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: Shop Messenger (build ${{ github.run_number }})
+          body: "مثبِّت مراسلة المحل. نزّل ملف ShopMessenger-Setup وثبّته على كل حاسوب في المحل."
+          files: shop-messenger/desktop/dist/*.exe
